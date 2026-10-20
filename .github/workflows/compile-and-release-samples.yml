@@ -1,0 +1,137 @@
+name: Compile Polyglot Samples & Publish Release
+
+on:
+  push:
+    branches:
+      - "**"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  compile-and-release-samples:
+    name: Compile All 10 Languages & Upload "samples" Release
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Prepare samples output directory
+        run: |
+          mkdir -p samples
+          echo "=== AdvanceTether (ATP/1.0) Polyglot Build & Execution Log ===" > samples/samples-interop-report.txt
+          date -u >> samples/samples-interop-report.txt
+          echo "" >> samples/samples-interop-report.txt
+
+      - name: 1. Compile & Run C11 SDK (gcc)
+        run: |
+          make -C sdks/c
+          cp bin/atp-c samples/atp-c-linux-x86_64
+          gcc -std=c11 -O2 -Wall -Wextra -Isdks/c/include -c sdks/c/src/advancetether.c -o samples/advancetether.o
+          ar rcs samples/libadvancetether.a samples/advancetether.o
+          rm -f samples/advancetether.o
+          ./samples/atp-c-linux-x86_64 --self-test | tee -a samples/samples-self-test-results.jsonl
+
+      - name: 2. Compile & Run C++17 SDK (g++)
+        run: |
+          make -C sdks/cpp
+          cp bin/atp-cpp samples/atp-cpp-linux-x86_64
+          ./samples/atp-cpp-linux-x86_64 --self-test | tee -a samples/samples-self-test-results.jsonl
+
+      - name: 3. Compile & Run Go SDK
+        run: |
+          cd sdks/go
+          go build -o ../../samples/atp-go-linux-x86_64 ./cmd/atp-node
+          cd ../..
+          ./samples/atp-go-linux-x86_64 --self-test | tee -a samples/samples-self-test-results.jsonl
+
+      - name: 4. Compile & Run Rust SDK (cargo release)
+        run: |
+          cd sdks/rust
+          cargo build --release
+          cp target/release/atp-rust ../../samples/atp-rust-linux-x86_64
+          cd ../..
+          ./samples/atp-rust-linux-x86_64 --self-test | tee -a samples/samples-self-test-results.jsonl
+
+      - name: 5. Compile & Run Java SDK (javac + runnable JAR)
+        run: |
+          mkdir -p /tmp/atp-java-classes
+          javac -d /tmp/atp-java-classes sdks/java/src/main/java/io/advancetether/AdvanceTetherNode.java
+          jar cfe samples/advancetether-java.jar io.advancetether.AdvanceTetherNode -C /tmp/atp-java-classes .
+          java -jar samples/advancetether-java.jar --self-test | tee -a samples/samples-self-test-results.jsonl
+
+      - name: 6. Compile & Run C# .NET SDK (dotnet publish)
+        run: |
+          dotnet publish sdks/csharp/AdvanceTether.csproj -c Release -o /tmp/atp-csharp-out
+          dotnet /tmp/atp-csharp-out/AdvanceTether.dll --self-test | tee -a samples/samples-self-test-results.jsonl
+          tar -czf samples/atp-csharp-linux-x86_64.tar.gz -C /tmp/atp-csharp-out .
+
+      - name: 7. Package & Run Python SDK
+        run: |
+          PYTHONPATH=sdks/python python3 -m advancetether.cli --self-test | tee -a samples/samples-self-test-results.jsonl
+          tar -czf samples/advancetether-python-sdk.tar.gz -C sdks/python .
+
+      - name: 8. Package & Run JavaScript / TypeScript SDK (Node.js)
+        run: |
+          node sdks/js/src/cli.js --self-test | tee -a samples/samples-self-test-results.jsonl
+          cd sdks/js
+          PKG_FILE=$(npm pack)
+          mv "$PKG_FILE" ../../samples/advancetether-js-sdk.tgz
+
+      - name: 9. Build & Run Ruby SDK Gem
+        run: |
+          ruby sdks/ruby/bin/atp-node --self-test | tee -a samples/samples-self-test-results.jsonl
+          cd sdks/ruby
+          gem build advancetether.gemspec
+          mv advancetether-1.0.0.gem ../../samples/advancetether-ruby-1.0.0.gem
+
+      - name: 10. Package & Run PHP SDK
+        run: |
+          php sdks/php/bin/atp-node.php --self-test | tee -a samples/samples-self-test-results.jsonl
+          tar -czf samples/advancetether-php-sdk.tar.gz -C sdks/php .
+
+      - name: Run Cross-Language Live Socket Interoperability Suite
+        run: |
+          python3 tests/run_all_tests.py | tee -a samples/samples-interop-report.txt
+          cp spec/test_vectors.json samples/test_vectors.json
+          cp spec/ATP-1.0.md samples/ATP-1.0.md
+          tar -czf advancetether-samples-bundle.tar.gz samples/
+          zip -r advancetether-samples-bundle.zip samples/
+          mv advancetether-samples-bundle.tar.gz advancetether-samples-bundle.zip samples/
+          ls -lh samples/
+
+      - name: Create or Update GitHub Release "samples"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          NOTES_FILE="/tmp/release-notes.md"
+          cat << 'EOF' > "$NOTES_FILE"
+          # AdvanceTether (`ATP/1.0`) — Polyglot Compiled Samples & Interop Results
+
+          Automated build of all **10 language SDKs** and cross-language `ATP/1.0` socket interoperability tests:
+          - `atp-c-linux-x86_64` & `libadvancetether.a` (Compiled C11 via `gcc`)
+          - `atp-cpp-linux-x86_64` (Compiled C++17 via `g++`)
+          - `atp-go-linux-x86_64` (Compiled Go binary)
+          - `atp-rust-linux-x86_64` (Compiled Rust release binary)
+          - `advancetether-java.jar` (Compiled runnable Java JAR)
+          - `atp-csharp-linux-x86_64.tar.gz` (Compiled .NET 8 C# bundle)
+          - `advancetether-python-sdk.tar.gz` (Python SDK package)
+          - `advancetether-js-sdk.tgz` (Node.js / TypeScript NPM package)
+          - `advancetether-ruby-1.0.0.gem` (Built Ruby Gem)
+          - `advancetether-php-sdk.tar.gz` (PHP 8 SDK package)
+          - `samples-self-test-results.jsonl` & `samples-interop-report.txt` (Verified execution logs across all 10 languages)
+          EOF
+
+          if gh release view samples >/dev/null 2>&1; then
+            gh release edit samples \
+              --title "samples" \
+              --notes-file "$NOTES_FILE"
+            gh release upload samples samples/* --clobber
+          else
+            gh release create samples samples/* \
+              --target "${{ github.sha }}" \
+              --title "samples" \
+              --notes-file "$NOTES_FILE"
+          fi

@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AdvanceTether (ATP/1.0) — Peer-to-Peer for All Languages</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <div class="logo-orb">AT2P</div>
+      <div>
+        <h1>AdvanceTether <span class="badge-proto">ATP/1.0</span></h1>
+        <p class="subtitle">Peer-to-Peer for All Languages &bull; E2E Encrypted (`ATP-SHA256-CTR-HMAC`) &bull; Kademlia XOR DHT &bull; Files &bull; Tunnels</p>
+      </div>
+    </div>
+    <div class="topbar-actions">
+      <div class="stat-pill"><span class="dot live"></span> <span id="stat-peers">10</span> Active Peers</div>
+      <div class="stat-pill">Links: <strong id="stat-links">0</strong></div>
+      <div class="stat-pill">DHT Keys: <strong id="stat-dht">0</strong></div>
+      <button id="btn-run-interop" class="btn btn-accent">Run 10-Language Interop Suite</button>
+    </div>
+  </header>
+
+  <main class="workspace">
+    <!-- Left Column: Live Mesh Topology Canvas & Node Spawner -->
+    <section class="panel mesh-panel">
+      <div class="panel-header">
+        <div>
+          <h2>Live Polyglot Mesh &amp; Kademlia XOR Ring</h2>
+          <span class="hint">Click any peer node to inspect or select as source/target. Real TCP sockets on 127.0.0.1.</span>
+        </div>
+        <div class="spawn-bar">
+          <select id="spawn-lang"></select>
+          <input id="spawn-name" type="text" placeholder="Optional peer name..." />
+          <button id="btn-spawn" class="btn btn-primary">+ Spawn Peer</button>
+        </div>
+      </div>
+
+      <div class="canvas-wrap">
+        <canvas id="mesh-canvas" width="760" height="440"></canvas>
+      </div>
+
+      <div class="peer-grid-header">
+        <h3>Active Multi-Language Nodes (<span id="peer-count-label">0</span>)</h3>
+      </div>
+      <div id="peer-list" class="peer-list"></div>
+    </section>
+
+    <!-- Right Column: Interactive P2P Suite Controls & Wire Inspector -->
+    <section class="panel control-panel">
+      <nav class="tabs">
+        <button class="tab active" data-tab="tab-msg">E2EE Messaging</button>
+        <button class="tab" data-tab="tab-dht">Kademlia DHT</button>
+        <button class="tab" data-tab="tab-pubsub">Pub/Sub</button>
+        <button class="tab" data-tab="tab-file">File Transfer</button>
+        <button class="tab" data-tab="tab-tunnel">Network Tether</button>
+        <button class="tab" data-tab="tab-sdks">10 Language SDKs</button>
+      </nav>
+
+      <!-- Tab 1: E2EE Messaging -->
+      <div id="tab-msg" class="tab-content active">
+        <h3>Direct End-to-End Encrypted Messaging &amp; RPC</h3>
+        <div class="form-row">
+          <div class="field">
+            <label>From Peer</label>
+            <select id="msg-from" class="peer-select"></select>
+          </div>
+          <div class="field">
+            <label>To Peer</label>
+            <select id="msg-to" class="peer-select"></select>
+          </div>
+        </div>
+        <div class="field">
+          <label>Message Payload (`ATP-SHA256-CTR-HMAC` Encrypted)</label>
+          <input id="msg-text" type="text" value="Hello across languages over AdvanceTether ATP/1.0!" />
+        </div>
+        <div class="form-actions">
+          <label class="checkbox-label">
+            <input id="msg-rpc" type="checkbox" checked /> Request RPC Echo Reply
+          </label>
+          <button id="btn-send-msg" class="btn btn-primary">Send Encrypted Frame</button>
+        </div>
+      </div>
+
+      <!-- Tab 2: Kademlia DHT -->
+      <div id="tab-dht" class="tab-content">
+        <h3>Kademlia 64-Bit XOR Distributed Hash Table</h3>
+        <div class="form-row">
+          <div class="field">
+            <label>Origin Peer</label>
+            <select id="dht-from" class="peer-select"></select>
+          </div>
+          <div class="field">
+            <label>Record Key</label>
+            <input id="dht-key" type="text" value="service.discovery.endpoint" />
+          </div>
+        </div>
+        <div class="field">
+          <label>Record Value</label>
+          <input id="dht-val" type="text" value="atp://127.0.0.1:9443/mesh-gateway" />
+        </div>
+        <div class="form-actions">
+          <button id="btn-dht-put" class="btn btn-primary">Replicate DHT_PUT Across Mesh</button>
+        </div>
+        <div id="dht-table" class="mini-list"></div>
+      </div>
+
+      <!-- Tab 3: Pub/Sub -->
+      <div id="tab-pubsub" class="tab-content">
+        <h3>Gossip Topic Pub/Sub Mesh</h3>
+        <div class="form-row">
+          <div class="field">
+            <label>Publisher Peer</label>
+            <select id="pub-from" class="peer-select"></select>
+          </div>
+          <div class="field">
+            <label>Topic Channel</label>
+            <input id="pub-topic" type="text" value="mesh-telemetry" />
+          </div>
+        </div>
+        <div class="field">
+          <label>Broadcast Message</label>
+          <input id="pub-data" type="text" value="All 10 language nodes synchronized at block #2026" />
+        </div>
+        <div class="form-actions">
+          <button id="btn-pub" class="btn btn-primary">Broadcast PUBSUB_PUB</button>
+        </div>
+      </div>
+
+      <!-- Tab 4: File Transfer -->
+      <div id="tab-file" class="tab-content">
+        <h3>Chunked SHA-256 Verified P2P File Transfer</h3>
+        <div class="form-row">
+          <div class="field">
+            <label>Sender Peer</label>
+            <select id="file-from" class="peer-select"></select>
+          </div>
+          <div class="field">
+            <label>Receiver Peer</label>
+            <select id="file-to" class="peer-select"></select>
+          </div>
+        </div>
+        <div class="field">
+          <label>Filename</label>
+          <input id="file-name" type="text" value="cross_lang_payload.txt" />
+        </div>
+        <div class="field">
+          <label>File Contents (Automatically split into `FILE_CHUNK` packets &amp; verified by SHA-256)</label>
+          <textarea id="file-content" rows="3">AdvanceTether Cross-Language Verified File Payload — Peer-to-Peer for all!</textarea>
+        </div>
+        <div class="form-actions">
+          <button id="btn-send-file" class="btn btn-primary">Transfer Verified File</button>
+        </div>
+        <div id="file-list" class="mini-list"></div>
+      </div>
+
+      <!-- Tab 5: Network Tethering & Tunnels -->
+      <div id="tab-tunnel" class="tab-content">
+        <h3>P2P Network Tethering &amp; Port-Forwarding Tunnels</h3>
+        <div class="form-row">
+          <div class="field">
+            <label>Client Peer</label>
+            <select id="tun-from" class="peer-select"></select>
+          </div>
+          <div class="field">
+            <label>Exit / Gateway Peer</label>
+            <select id="tun-to" class="peer-select"></select>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="field">
+            <label>Target Host</label>
+            <input id="tun-host" type="text" value="127.0.0.1" />
+          </div>
+          <div class="field">
+            <label>Target Port</label>
+            <input id="tun-port" type="number" value="8080" />
+          </div>
+        </div>
+        <div class="field">
+          <label>Initial Tether Stream Data (`TUNNEL_DATA`)</label>
+          <input id="tun-payload" type="text" value="GET /status HTTP/1.1\r\nHost: tethered.peer\r\n\r\n" />
+        </div>
+        <div class="form-actions">
+          <button id="btn-open-tunnel" class="btn btn-primary">Open Tether &amp; Stream Data</button>
+        </div>
+        <div id="tunnel-list" class="mini-list"></div>
+      </div>
+
+      <!-- Tab 6: 10 Language SDKs Explorer -->
+      <div id="tab-sdks" class="tab-content">
+        <div class="sdk-bar">
+          <select id="sdk-select"></select>
+          <code id="sdk-cli-cmd" class="cli-pill"></code>
+        </div>
+        <pre id="sdk-code-view" class="code-viewer">Loading SDK source code...</pre>
+      </div>
+
+      <!-- Live Wire Frame & Interop Console -->
+      <div class="wire-section">
+        <div class="wire-header">
+          <h3>Live `AT2P` Binary Wire Stream &amp; Interop Console</h3>
+          <span class="badge-enc">12B Header + `ATP-SHA256-CTR-HMAC`</span>
+        </div>
+        <div id="wire-log" class="wire-log"></div>
+      </div>
+    </section>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>

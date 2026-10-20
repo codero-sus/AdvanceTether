@@ -1,0 +1,31 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+require_relative "../lib/advancetether"
+
+if ARGV.include?("--self-test")
+  net_key = "advancetether-universal-key-2026"
+  peer_a = AdvanceTether.generate_peer_id("seed-alpha")
+  peer_b = AdvanceTether.generate_peer_id("seed-beta")
+  dist = AdvanceTether.xor_distance(peer_a, peer_b)
+
+  env = {
+    "v" => 1,
+    "id" => "msg_0123456789abcdef",
+    "type" => "MSG",
+    "from" => peer_a,
+    "to" => peer_b,
+    "lang" => "polyglot",
+    "ts" => 1792454400000,
+    "ttl" => 6,
+    "body" => { "text" => "Peer-to-Peer for all." }
+  }
+  env["sig"] = AdvanceTether.sign_envelope(env, net_key)
+  raise "Ruby test vector mismatch" unless peer_a == "atp_ba316cd7abc9b7dc" && env["sig"] == "278c381e5f2ab387f87b7b829fabb6b3"
+
+  puts JSON.generate({ status: "ok", lang: "ruby", peer_a: peer_a, peer_b: peer_b, xor_distance: dist.to_s })
+  exit 0
+end
+
+node = AdvanceTether::Node.new
+puts JSON.generate({ event: "initialized", peer_id: node.peer_id, lang: "ruby" })

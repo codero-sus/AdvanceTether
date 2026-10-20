@@ -1,0 +1,26 @@
+{
+  "name": "advancetether",
+  "version": "1.0.0",
+  "description": "AdvanceTether (ATP/1.0) — Cross-language Peer-to-Peer Messaging, DHT, Pub/Sub, File Transfer & Tunneling SDK for Node.js & TypeScript",
+  "main": "src/index.js",
+  "types": "src/index.d.ts",
+  "bin": {
+    "atp-js": "src/cli.js"
+  },
+  "scripts": {
+    "test": "node src/cli.js --self-test",
+    "start": "node src/cli.js"
+  },
+  "keywords": [
+    "p2p",
+    "peer-to-peer",
+    "dht",
+    "kademlia",
+    "pubsub",
+    "tunnel",
+    "tether",
+    "encryption",
+    "polyglot"
+  ],
+  "license": "MIT"
+}

@@ -1,0 +1,64 @@
+#!/usr/bin/env python3
+"""
+AdvanceTether Unified Polyglot CLI (`bin/atp`)
+Manage peers, run cross-language interoperability tests, or launch the interactive web dashboard.
+"""
+
+import argparse
+import os
+import subprocess
+import sys
+
+ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description="AdvanceTether (ATP/1.0) Unified Polyglot CLI")
+    sub = parser.add_subparsers(dest="cmd")
+
+    sub.add_parser("test", help="Run the full 10-language & cross-process socket interoperability suite")
+    dash = sub.add_parser("dashboard", help="Launch the interactive Web Dashboard & Signaling Hub")
+    dash.add_argument("--port", type=int, default=3000)
+
+    node_cmd = sub.add_parser("node", help="Launch a peer node in Python, JS, C, or C++")
+    node_cmd.add_argument("--lang", choices=["python", "js", "c", "cpp"], default="python")
+    node_cmd.add_argument("--name", default="atp-peer")
+    node_cmd.add_argument("--port", type=int, default=0)
+    node_cmd.add_argument("--connect", help="host:port to connect to")
+    node_cmd.add_argument("--send", help="Message text to send")
+
+    args = parser.parse_args()
+
+    if args.cmd == "test" or args.cmd is None:
+        return subprocess.call(["python3", os.path.join(ROOT_DIR, "tests/run_all_tests.py")], cwd=ROOT_DIR)
+
+    if args.cmd == "dashboard":
+        env = os.environ.copy()
+        env["PORT"] = str(args.port)
+        return subprocess.call(["node", os.path.join(ROOT_DIR, "dashboard/server.js")], cwd=ROOT_DIR, env=env)
+
+    if args.cmd == "node":
+        if args.lang == "python":
+            env = os.environ.copy()
+            env["PYTHONPATH"] = os.path.join(ROOT_DIR, "sdks/python")
+            cmd = ["python3", "-m", "advancetether.cli", "--name", args.name, "--port", str(args.port)]
+        elif args.lang == "js":
+            cmd = ["node", os.path.join(ROOT_DIR, "sdks/js/src/cli.js"), "--name", args.name, "--port", str(args.port)]
+        elif args.lang == "c":
+            subprocess.check_call(["make", "-C", os.path.join(ROOT_DIR, "sdks/c")], stdout=subprocess.DEVNULL)
+            cmd = [os.path.join(ROOT_DIR, "bin/atp-c"), "--name", args.name, "--port", str(args.port)]
+        else:
+            subprocess.check_call(["make", "-C", os.path.join(ROOT_DIR, "sdks/cpp")], stdout=subprocess.DEVNULL)
+            cmd = [os.path.join(ROOT_DIR, "bin/atp-cpp"), "--name", args.name, "--port", str(args.port)]
+
+        if args.connect:
+            cmd.extend(["--connect", args.connect])
+        if args.send:
+            cmd.extend(["--send", args.send])
+        return subprocess.call(cmd, cwd=ROOT_DIR)
+
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

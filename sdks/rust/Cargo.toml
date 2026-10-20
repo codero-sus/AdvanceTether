@@ -1,0 +1,14 @@
+[package]
+name = "advancetether"
+version = "1.0.0"
+edition = "2021"
+description = "AdvanceTether (ATP/1.0) — Cross-language Peer-to-Peer Messaging, DHT, Pub/Sub, File Transfer & Tunneling SDK for Rust"
+license = "MIT"
+
+[lib]
+name = "advancetether"
+path = "src/lib.rs"
+
+[[bin]]
+name = "atp-rust"
+path = "src/main.rs"

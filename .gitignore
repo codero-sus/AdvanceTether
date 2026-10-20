@@ -1,0 +1,25 @@
+# Compiled binaries & build artifacts
+bin/atp-c
+bin/atp-cpp
+*.o
+*.a
+*.so
+*.dylib
+*.exe
+*.class
+*.jar
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.venv/
+
+# Node
+node_modules/
+
+# Rust / C# / Go
+sdks/rust/target/
+sdks/csharp/bin/
+sdks/csharp/obj/

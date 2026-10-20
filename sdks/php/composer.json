@@ -1,0 +1,14 @@
+{
+  "name": "advancetether/sdk",
+  "description": "AdvanceTether (ATP/1.0) — Cross-language Peer-to-Peer Messaging, DHT, Pub/Sub, File Transfer & Tunneling SDK for PHP",
+  "type": "library",
+  "license": "MIT",
+  "autoload": {
+    "psr-4": {
+      "AdvanceTether\\": "src/"
+    }
+  },
+  "require": {
+    "php": ">=8.0"
+  }
+}

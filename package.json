@@ -1,0 +1,12 @@
+{
+  "name": "advancetether-suite",
+  "version": "1.0.0",
+  "private": true,
+  "description": "AdvanceTether (ATP/1.0) — Peer-to-Peer for All Languages (10 Language SDKs + Interactive Mesh Dashboard)",
+  "scripts": {
+    "start": "node dashboard/server.js",
+    "dev": "node dashboard/server.js",
+    "test": "python3 tests/run_all_tests.py"
+  },
+  "license": "MIT"
+}
